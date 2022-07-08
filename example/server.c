@@ -4,12 +4,14 @@
 #include <string.h>
 
 int main() {
+    //create socket
     int lfd = socket(AF_INET, SOCK_STREAM, 0);
     if(lfd == -1) {
         perror("socket");
         exit(-1);
     }
 
+    //bind
     struct sockaddr_in saddr;
     saddr.sin_family = AF_INET;
     //inet_pton(AF_INET, "192.168.1.1", saddr.sin_addr.s_addr);
@@ -21,12 +23,14 @@ int main() {
         exit(-1);
     }
 
+    //listen
     ret = listen(lfd, 8);
     if(ret == -1) {
         perror("listen");
         exit(-1);
     }
 
+    //accept
     struct sockaddr_in clientaddr;
     socklen_t len = sizeof(clientaddr);
     int cfd = accept(lfd, (struct sockeaddr *) &clientaddr, &len);
@@ -35,6 +39,7 @@ int main() {
         exit(-1);
     }
 
+    //
     char clientIP[16];
     inet_ntop(AF_INET, &clientaddr.sin_addr.s_addr, clientIP, sizeof(clientIP));
     unsigned short clientPort = ntohs(clientaddr.sin_port);
@@ -52,8 +57,9 @@ int main() {
         printf("client closed...\n");
     }
 
+    //write
     char *data = "hello, i am server";
-    write(cfd, "hello, i am server", strlen(data));
+    write(cfd, data, strlen(data));
 
     close(cfd);
     close(lfd);
