@@ -22,8 +22,20 @@ int main() {
     char *data = "hello, i am client";
     write(fd, data, strlen(data));
 
-    //read
-    read()
+    // read
+    char recvBuf[1024] = {0};
+    int len = read(fd, recvBuf, sizeof(recvBuf));
+    if(len == -1) {
+        perror("read");
+        exit(-1);
+    } else if(len > 0) {
+        printf("recv client data : %d\n", recvBuf);
+    } else if(len == 0) {
+        printf("server closed...\n");
+    }
+
+    //close
+    close(fd);
 
     return 0;
 }

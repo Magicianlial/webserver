@@ -39,13 +39,14 @@ int main() {
         exit(-1);
     }
 
-    //
+    //client ip port setting
     char clientIP[16];
     inet_ntop(AF_INET, &clientaddr.sin_addr.s_addr, clientIP, sizeof(clientIP));
     unsigned short clientPort = ntohs(clientaddr.sin_port);
 
     printf("client ip is %s, port is %d", clientIP, clientPort);
 
+    // read
     char recvBuf[1024] = {0};
     int len = read(cfd, recvBuf, sizeof(recvBuf));
     if(len == -1) {
@@ -61,6 +62,7 @@ int main() {
     char *data = "hello, i am server";
     write(cfd, data, strlen(data));
 
+    //close
     close(cfd);
     close(lfd);
 
