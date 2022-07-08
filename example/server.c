@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 int main() {
     //create socket
@@ -17,7 +18,7 @@ int main() {
     //inet_pton(AF_INET, "192.168.1.1", saddr.sin_addr.s_addr);
     saddr.sin_addr.s_addr = INADDR_ANY;
     saddr.sin_port = htons(8008);
-    int ret = bind(lfd, (struct sockeaddr *)&saddr, sizeof(saddr));
+    int ret = bind(lfd, (struct sockaddr *)&saddr, sizeof(saddr));
     if(ret == -1) {
         perror("bind");
         exit(-1);
@@ -32,8 +33,8 @@ int main() {
 
     //accept
     struct sockaddr_in clientaddr;
-    socklen_t len = sizeof(clientaddr);
-    int cfd = accept(lfd, (struct sockeaddr *) &clientaddr, &len);
+    int len = sizeof(clientaddr);
+    int cfd = accept(lfd, (struct sockaddr *) &clientaddr, &len);
     if(cfd == -1) {
         perror("accept");
         exit(-1);
@@ -48,13 +49,13 @@ int main() {
 
     // read
     char recvBuf[1024] = {0};
-    int len = read(cfd, recvBuf, sizeof(recvBuf));
-    if(len == -1) {
+    int rlen = read(cfd, recvBuf, sizeof(recvBuf));
+    if(rlen == -1) {
         perror("read");
         exit(-1);
-    } else if(len > 0) {
-        printf("recv client data : %d\n", recvBuf);
-    } else if(len == 0) {
+    } else if(rlen > 0) {
+        printf("recv client data : %s\n", recvBuf);
+    } else if(rlen == 0) {
         printf("client closed...\n");
     }
 
