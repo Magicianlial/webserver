@@ -15,7 +15,7 @@ int main() {
     //bind
     struct sockaddr_in saddr;
     saddr.sin_family = AF_INET;
-    //inet_pton(AF_INET, "192.168.1.1", saddr.sin_addr.s_addr);
+    //inet_pton(AF_INET, "172.27.130.132", saddr.sin_addr.s_addr);
     saddr.sin_addr.s_addr = INADDR_ANY;
     saddr.sin_port = htons(8008);
     int ret = bind(lfd, (struct sockaddr *)&saddr, sizeof(saddr));
@@ -47,21 +47,26 @@ int main() {
 
     printf("client ip is %s, port is %d", clientIP, clientPort);
 
-    // read
+    //communicate
     char recvBuf[1024] = {0};
-    int rlen = read(cfd, recvBuf, sizeof(recvBuf));
-    if(rlen == -1) {
-        perror("read");
-        exit(-1);
-    } else if(rlen > 0) {
-        printf("recv client data : %s\n", recvBuf);
-    } else if(rlen == 0) {
-        printf("client closed...\n");
-    }
+    while(1) {
+        // read
+        
+        int rlen = read(cfd, recvBuf, sizeof(recvBuf));
+        if(rlen == -1) {
+            perror("read");
+            exit(-1);
+        } else if(rlen > 0) {
+            printf("recv client data : %s\n", recvBuf);
+        } else if(rlen == 0) {
+            printf("client closed...\n");
+            break;
+        }
 
-    //write
-    char *data = "hello, i am server";
-    write(cfd, data, strlen(data));
+        //write
+        char *data = "hello, i am server";
+        write(cfd, data, strlen(data));
+    }
 
     //close
     close(cfd);

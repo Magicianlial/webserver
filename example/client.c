@@ -11,7 +11,7 @@ int main() {
     //connect
     struct sockaddr_in serveraddr;
     serveraddr.sin_family = AF_INET;
-    inet_pton(AF_INET, "192.158.193.128", &serveraddr.sin_addr.s_addr);
+    inet_pton(AF_INET, "172.27.130.132", &serveraddr.sin_addr.s_addr);
     serveraddr.sin_port = htons(8008);
     int ret = connect(fd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
     if(ret == -1) {
@@ -19,20 +19,25 @@ int main() {
         exit(-1);
     }
 
-    //write
-    char *data = "hello, i am client";
-    write(fd, data, strlen(data));
-
-    // read
+    //comunicate
     char recvBuf[1024] = {0};
-    int len = read(fd, recvBuf, sizeof(recvBuf));
-    if(len == -1) {
-        perror("read");
-        exit(-1);
-    } else if(len > 0) {
-        printf("recv client data : %s\n", recvBuf);
-    } else if(len == 0) {
-        printf("server closed...\n");
+    while(1) {
+        //write
+        char *data = "hello, i am client";
+        write(fd, data, strlen(data));
+        sleep(1);
+        // read
+        
+        int len = read(fd, recvBuf, sizeof(recvBuf));
+        if(len == -1) {
+            perror("read");
+            exit(-1);
+        } else if(len > 0) {
+            printf("recv server data : %s\n", recvBuf);
+        } else if(len == 0) {
+            printf("server closed...\n");
+            break;
+        }
     }
 
     //close
