@@ -16,7 +16,7 @@ int main() {
     //bind
     struct sockaddr_in saddr;
     saddr.sin_family = AF_INET;
-    saddr.sin_port = htons(9999);
+    saddr.sin_port = htons(8008);
     saddr.sin_addr.s_addr = INADDR_ANY;
     int ret = bind(lfd, (struct sockaddr *)&saddr, sizeof(saddr));
     if(ret == -1) {
@@ -65,7 +65,7 @@ int main() {
                     printf("client closed ...");
                 }
 
-                write(cfd, recvBuf, strlen(recvBuf));
+                write(cfd, recvBuf, strlen(recvBuf) + 1);
             }
             close(cfd);
             exit(0);
