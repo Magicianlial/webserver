@@ -15,14 +15,14 @@ void recleChild(int arg) {
         } else if(ret == 0) {
             break; //still have
         } else {
-            printf("subprocess %d 回收了\n", ret);
+            printf("子进程 %d 回收了\n", ret);
         }
     }
 }
 
 int main() {
 
-    //crate signal(waitpid)
+    // crate signal(waitpid)
     struct sigaction act;
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
@@ -30,14 +30,14 @@ int main() {
     sigaction(SIGCHLD, &act, NULL);
 
 
-    //create socket
+    // create socket
     int lfd = socket(PF_INET, SOCK_STREAM, 0);
     if(lfd == -1) {
         perror("socket");
         exit(-1);
     }
 
-    //bind
+    // bind
     struct sockaddr_in saddr;
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(8008);
@@ -48,16 +48,16 @@ int main() {
         exit(-1);
     }
 
-    //listen
+    // listen
     ret = listen(lfd, 128);
     if(ret == -1) {
         perror("listen");
         exit(-1);
     }
 
-    //continue accept
+    // continue accept
     while(1) {
-        //accept a clinet
+        // accept a client
         struct sockaddr_in cliaddr;
         int len = sizeof(cliaddr);
         int cfd = accept(lfd, (struct sockaddr *)&cliaddr, &len);
@@ -67,17 +67,17 @@ int main() {
             exit(-1);
         }
 
-        //create process to communicate 
+        // create process to communicate 
         pid_t pid = fork();
         if(pid == 0) {
-            //subprocess
-            //get client infor
+            // subprocess
+            // get client infor
             char cliIp[16];
             inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, cliIp, sizeof(cliIp));
             unsigned short cliPort = ntohs(cliaddr.sin_port);
             printf("client ip is %s, port is %d\n", cliIp, cliPort);
 
-            //accept clinet data
+            // accept client data
             char recvBuf[1024] = {0};
             while(1) {
                 int len = read(cfd, &recvBuf, sizeof(recvBuf));
@@ -86,8 +86,9 @@ int main() {
                     exit(-1);
                 } else if(len > 0) {
                     printf("recv client data : %s\n", recvBuf);
-                } else {
-                    printf("client closed ...");
+                } else if(len == 0){
+                    printf("client closed ...\n");
+                    break;
                 }
 
                 write(cfd, recvBuf, strlen(recvBuf) + 1);

@@ -5,10 +5,10 @@
 #include <stdlib.h>
 
 int main() {
-    //create socket
+    // create socket
     int fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    //connect
+    // connect
     struct sockaddr_in serveraddr;
     serveraddr.sin_family = AF_INET;
     inet_pton(AF_INET, "172.27.130.132", &serveraddr.sin_addr.s_addr);
@@ -19,14 +19,14 @@ int main() {
         exit(-1);
     }
 
-    //comunicate
+    // comunicate
     char recvBuf[1024] = {0};
     int i = 0;
     while(1) {
-        //write
+        // write
         sprintf(recvBuf, "data : %d\n", i++);
         write(fd, recvBuf, strlen(recvBuf) + 1);
-        sleep(1);
+        
         // read
         
         int len = read(fd, recvBuf, sizeof(recvBuf));
@@ -39,9 +39,11 @@ int main() {
             printf("server closed...\n");
             break;
         }
+
+        sleep(1);
     }
 
-    //close
+    // close
     close(fd);
 
     return 0;
