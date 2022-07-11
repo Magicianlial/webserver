@@ -3,8 +3,32 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <wait.h>
+#include <errno.h>
+
+void recleChild(int arg) {
+    while(1) {
+        int ret = waitpid(-1, NULL, WNOHANG);
+        if(ret == -1) {
+            break; //done
+        } else if(ret == 0) {
+            break; //still have
+        } else {
+            printf("subprocess %d 回收了\n", ret);
+        }
+    }
+}
 
 int main() {
+
+    //crate signal(waitpid)
+    struct sigaction act;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    act.sa_handler = recleChild;
+    sigaction(SIGCHLD, &act, NULL);
+
 
     //create socket
     int lfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -38,6 +62,7 @@ int main() {
         int len = sizeof(cliaddr);
         int cfd = accept(lfd, (struct sockaddr *)&cliaddr, &len);
         if(cfd == -1) {
+            if(errno == EINTR) continue;
             perror("accept");
             exit(-1);
         }
