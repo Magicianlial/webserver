@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <wait.h>
 #include <errno.h>
-#include <sys/select.h>
+#include <poll.h>
 
 int main() {
 
@@ -35,49 +35,58 @@ int main() {
         exit(-1);
     }
 
-    // create fd_set for select
-    fd_set rdset, tmp;
-    FD_ZERO(&rdset);
-    FD_SET(lfd, &rdset);
-    int maxfd = lfd;
+    // init fd_sets
+    struct pollfd fds[1024];
+    for(int i = 0; i < 1024; i++) {
+        fds[i].fd = -1;
+        fds[i].events = POLLIN;
+    }
+    fds[0].fd = lfd;
+    int nfds = 0;
 
     while(1) {
-        tmp = rdset; //refresh
-        // select
-        ret = select(maxfd + 1, &tmp, NULL, NULL, NULL);
+        //poll
+        ret = poll(fds, nfds + 1, -1);
+
         if(ret == -1) {
-            perror("select");
+            perror("poll");
             exit(-1);
         } else if(ret == 0) {
             continue;
         } else if(ret > 0) {
             // some fds change
-            if(FD_ISSET(lfd, &tmp)) {
+            if(fds[0].revents & POLLIN) {
                 // new client come
                 struct sockaddr_in cliaddr;
                 int len = sizeof(cliaddr);
                 int cfd = accept(lfd, (struct sockaddr *)&cliaddr, &len);
 
                 // add cfd to fd_set
-                FD_SET(cfd, &rdset);
-                maxfd = maxfd > cfd ? maxfd : cfd;
+                for(int i = 1; i < 1024; i++) {
+                    if(fds[i].fd == -1) {
+                        fds[i].fd = cfd;
+                        fds[i].events = POLLIN;
+                        break;
+                    }
+                }
+                nfds = nfds > cfd ? nfds : cfd;
             }
 
-            for(int i = lfd + 1; i <= maxfd; i++) {
-                if(FD_ISSET(i, &tmp)) {
+            for(int i = 1; i <= nfds; i++) {
+                if(fds[i].revents & POLLIN) {
                     // fd:i hava data
                     char buf[1024] = {0};
-                    int rlen = read(i, buf, sizeof(buf));
+                    int rlen = read(fds[i].fd, buf, sizeof(buf));
                     if(rlen == -1) {
                         perror("read");
                         exit(-1);
                     } else if(rlen == 0) {
                         printf("client closed ...\n");
-                        close(i);
-                        FD_CLR(i, &rdset);
+                        close(fds[i].fd);
+                        fds[i].fd = -1;
                     } else if(rlen > 0) {
                         printf("recv buf is : %s\n", buf);
-                        write(i, buf, strlen(buf) + 1);
+                        write(fds[i].fd, buf, strlen(buf) + 1);
                     }
                 }
             }
