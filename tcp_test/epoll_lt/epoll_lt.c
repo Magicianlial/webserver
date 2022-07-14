@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 
+// epoll_LevelTrager
 int main() {
     // create socket
     int lfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -49,7 +50,7 @@ int main() {
             exit(-1);
         }
 
-        printf("ret == %d\n", ret);
+        printf("client numbers == %d\n", ret);
 
         for(int i = 0; i < ret; i++) {
             int curfd = epevs[i].data.fd;
@@ -65,7 +66,7 @@ int main() {
                 epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &epev);
             } else {
                 // recv data
-                char buf[1024] = {0};
+                char buf[5] = {0};
                 int rlen = read(curfd, buf, sizeof(buf));
                 if(rlen == -1) {
                     perror("read");

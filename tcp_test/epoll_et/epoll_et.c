@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
+#include <fcntl.h>
+#include <errno.h>
 
+// epoll_EdgeTrager
 int main() {
     // create socket
     int lfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -49,7 +52,7 @@ int main() {
             exit(-1);
         }
 
-        printf("ret == %d\n", ret);
+        printf("client numbers == %d\n", ret);
 
         for(int i = 0; i < ret; i++) {
             int curfd = epevs[i].data.fd;
@@ -60,24 +63,51 @@ int main() {
                 int len = sizeof(cliaddr);
                 int cfd = accept(lfd, (struct sockaddr *)&cliaddr, &len);
 
-                epev.events = EPOLLIN;
+                // set cfd non_block
+                int flag = fcntl(cfd, F_GETFL);
+                flag | O_NONBLOCK;
+                fcntl(cfd, F_SETFD, flag);
+
+                epev.events = EPOLLIN | EPOLLET; // set epollet
                 epev.data.fd = cfd;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &epev);
             } else {
                 // recv data
-                char buf[1024] = {0};
-                int rlen = read(curfd, buf, sizeof(buf));
-                if(rlen == -1) {
-                    perror("read");
-                    exit(-1);
-                } else if(rlen == 0) {
-                    printf("client closed ...\n");
-                    epoll_ctl(epfd, EPOLL_CTL_DEL, curfd, NULL);
-                    close(curfd);
-                } else if(rlen > 0) {
-                    printf("recv buf is : %s\n", buf);
-                    write(curfd, buf, strlen(buf) + 1);
+                // char buf[5] = {0};
+                // int rlen = read(curfd, buf, sizeof(buf));
+                // if(rlen == -1) {
+                //     perror("read");
+                //     exit(-1);
+                // } else if(rlen == 0) {
+                //     printf("client closed ...\n");
+                //     epoll_ctl(epfd, EPOLL_CTL_DEL, curfd, NULL);
+                //     close(curfd);
+                // } else if(rlen > 0) {
+                //     printf("recv buf is : %s\n", buf);
+                //     write(curfd, buf, strlen(buf) + 1);
+                // }
+
+                // recv data (loop read)
+                char buf[5] = {0};
+                int len = 0;
+                while(len = read(curfd, buf, sizeof(buf)) > 0) {
+                    printf("recv data : %s\n", buf);
+                    // write(STDOUT_FILENO, buf, len);
+                    write(curfd, buf, len);
                 }
+
+                if(len == 0) {
+                    printf("client closed ...\n");
+                } else if(len == -1) {
+                    if(errno == EAGAIN) {
+                        printf("data over ...\n");
+                    }
+                    else {
+                        perror("read");
+                        exit(-1);
+                    }
+                }
+
             }
         }
 
