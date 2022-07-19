@@ -80,6 +80,7 @@ threadpool<T>::~threadpool() {
     m_stop = true;
 }
 
+
 template<typename T>
 bool threadpool<T>::append(T *request) {
     m_queuelocker.lock();
