@@ -44,17 +44,18 @@ private:
 };
 
 template<typename T>
-threadpool<T>::threadpool(int thread_number = 8, int max_requests = 10000) :
-    m_thread_number(thread_number), m_max_requests(max_requests),
-    m_stop(false), m_thread(NULL) {
+threadpool<T>::threadpool(int thread_number, int max_requests) :
+    m_thread_number(thread_number), 
+    m_max_requests(max_requests),
+    m_stop(false), m_threads(NULL) {
 
     if((thread_number <= 0) || (max_requests <= 0)) {
-        throw std::exception;
+        throw std::exception();
     }
 
     m_threads = new pthread_t[m_thread_number];
     if(!m_threads) {
-        throw std::exception;
+        throw std::exception();
     }
 
     //创建thread_number个线程，并设置为线程脱离
@@ -63,12 +64,12 @@ threadpool<T>::threadpool(int thread_number = 8, int max_requests = 10000) :
 
         if(pthread_create(m_threads + i, NULL, worker, this) != 0) {
             delete [] m_threads;
-            throw std::exception;
+            throw std::exception();
         }
 
-        if(pthread_detach(m_thread[i])) {
+        if(pthread_detach(m_threads[i])) {
             delete [] m_threads;
-            throw std::exception;
+            throw std::exception();
         }
     }
 
@@ -98,7 +99,7 @@ bool threadpool<T>::append(T *request) {
 
 template<typename T>
 void* threadpool<T>::worker(void *arg) {
-    threadpool * pool = (threadpoll *) arg;
+    threadpool * pool = (threadpool *) arg;
     pool->run();
     return pool;
 }
@@ -112,17 +113,14 @@ void threadpool<T>::run() {
             m_queuelocker.unlock();
             continue;
         }
+        T *request = m_workqueue.front();
+        m_workqueue.pop_front();
+        m_queuelocker.unlock();
+        if(!request) {
+            continue;
+        }
+        request->process();
     }
-
-    T *requeset = m_workqueue.front();
-    m_workqueue.pop_front();
-    m_queuelocker.unlcok();
-
-    if(!request) {
-        continue;
-    }
-
-    request->process();
 }
 
 
