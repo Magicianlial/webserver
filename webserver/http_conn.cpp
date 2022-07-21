@@ -38,6 +38,14 @@ void modfd(int epollfd, int fd, int ev) {
     epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);
 }
 
+void http_conn::init() {
+    m_check_state = CHECK_STATE_REQUESTLINE; // 初始化状态为解析请求首行
+    m_checked_index = 0;
+    m_start_line = 0;
+    m_read_idx = 0;
+}
+
+
 // 初始化新接收的连接
 void http_conn::init(int sockfd, const sockaddr_in &addr) {
     m_sockfd = sockfd;
@@ -50,6 +58,8 @@ void http_conn::init(int sockfd, const sockaddr_in &addr) {
     // 添加到epoll对象中
     addfd(m_epollfd, m_sockfd, true);
     m_user_count++; //总用户数+1
+
+    init();
 } 
 
 // 关闭连接
@@ -96,11 +106,139 @@ bool http_conn::write() {
     return true;
 }
 
+// 主状态机，解析请求
+http_conn::HTTP_CODE http_conn::process_read() {
+    LINE_STATUS line_status = LINE_OK;
+    HTTP_CODE ret = NO_REQUEST;
+
+    char *text = 0;
+
+    while( ((m_check_state == CHECK_STATE_CONTENT) && (line_status == LINE_OK)) 
+        || (line_status == parse_line()) == LINE_OK) {
+        // 解析到了一行完整的数据，或者解析到了请求体，也就是完成的数据
+
+        //获取一行数据
+        text = get_line();
+
+        m_start_line = m_checked_index;
+        printf("got 1 http line %s\n", text);
+
+        switch (m_check_state) {
+            case CHECK_STATE_REQUESTLINE:
+            {
+                ret = parse_request_line(text);
+                if(ret == BAD_REQUEST) {
+                    return BAD_REQUEST;
+                }
+                break;
+            }
+
+            case CHECK_STATE_HEADER:
+            {
+                ret = parse_headers(text);
+                if(ret == BAD_REQUEST) {
+                    return BAD_REQUEST;
+                } else if(ret == GET_REQUEST) {
+                    return do_request();
+                }
+            }
+
+            case CHECK_STATE_CONTENT: 
+            {
+                ret = parse_content(text);
+                if(ret == GET_REQUEST) {
+                    return do_request();
+                }
+                line_status = LINE_OPEN;
+            }
+
+            default:
+            {
+                return INTERNAL_ERROR;
+            }
+        }
+
+        return NO_REQUEST;
+        
+    } 
+
+
+    return NO_REQUEST;
+}
+
+// 解析HTTP请求首行,  获得请求方法， 目标URL, HTTP版本
+http_conn::HTTP_CODE http_conn::parse_request_line(char *text) {
+
+
+    return NO_REQUEST;
+}
+
+// 解析一行，判断依据\r\n
+http_conn::LINE_STATUS http_conn::parse_line() {
+
+    char temp;
+
+    for( ; m_checked_index < m_read_idx; m_checked_index++) {
+        temp = m_read_buf[m_checked_index];
+        if( temp == '\r') {
+            if((m_checked_index + 1) == m_read_idx) { //未读取到完整
+                return LINE_OPEN; 
+            } else if(m_read_buf[m_checked_index + 1] == '\n') {
+                m_read_buf[m_checked_index++] = '\0';
+                m_read_buf[m_checked_index++] = '\0';
+                return LINE_OK; 
+            } 
+            return LINE_BAD;
+        } else if(temp == '\n') {
+            if((m_checked_index > 1) && (m_read_buf[m_checked_index] == '\r')) {
+                m_read_buf[m_checked_index-1] = '\0';
+                m_read_buf[m_checked_index++] = '\0';
+                return LINE_OK;
+            
+            }
+            return LINE_BAD;
+        } 
+        return LINE_OPEN;
+    }
+
+    return LINE_OK;
+}
+
+// 
+http_conn::HTTP_CODE http_conn::do_request() {
+
+
+    return NO_REQUEST;
+}
+
+// 解析请求头
+http_conn::HTTP_CODE http_conn::parse_headers(char *text) {
+
+
+    return NO_REQUEST;
+}
+
+// 解析请求体
+http_conn::HTTP_CODE http_conn::parse_content(char *text) {
+
+    return NO_REQUEST;
+}
+
+http_conn::LINE_STATUS http_conn::parse_line() {
+
+    return LINE_OK;
+}
+
 // 由线程池中的工作线程调用，处理HTTP请求的入口函数
 void http_conn::process() {
     
     // 解析HTTP请求
-    
+    HTTP_CODE read_ret = process_read();
+    if(read_ret == NO_REQUEST) {
+        modfd(m_epollfd, m_sockfd, EPOLLIN);
+        return;
+    }
+
     printf("parse request, create response\n");
 
     //生成响应
