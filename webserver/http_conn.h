@@ -78,6 +78,11 @@ private:
 
     int m_checked_index; // 当前正在分析的字符在读缓冲区位置
     int m_start_line; // 当前解析行的起始位置
+    char * m_url; // 请求目标文件名
+    char *m_version; // 协议版本,只支持HTTP1.1
+    METHOD m_method; // 请求方法
+    char *m_host; // 主机名
+    bool m_linger; // 判断HTTP是否保持连接
 
     char * get_line() { return m_read_buf + m_start_line; }
     HTTP_CODE do_request();

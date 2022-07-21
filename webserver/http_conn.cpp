@@ -43,6 +43,12 @@ void http_conn::init() {
     m_checked_index = 0;
     m_start_line = 0;
     m_read_idx = 0;
+    m_method = GET;
+    m_url = 0;
+    m_version = 0;
+    m_linger = false;
+
+    bzero(m_read_buf, READ_BUFFER_SIZE);
 }
 
 
@@ -168,8 +174,41 @@ http_conn::HTTP_CODE http_conn::process_read() {
 
 // 解析HTTP请求首行,  获得请求方法， 目标URL, HTTP版本
 http_conn::HTTP_CODE http_conn::parse_request_line(char *text) {
-
-
+    // GET /index.html HTTP/1.1
+    m_url = strpbrk(text, " \t"); // 判断第二个参数中的字符哪个在text中最先出现
+    if (! m_url) { 
+        return BAD_REQUEST;
+    }
+    // GET\0/index.html HTTP/1.1
+    *m_url++ = '\0';    // 置位空字符，字符串结束符
+    char* method = text;
+    if ( strcasecmp(method, "GET") == 0 ) { // 忽略大小写比较
+        m_method = GET;
+    } else {
+        return BAD_REQUEST;
+    }
+    // /index.html HTTP/1.1
+    // 检索字符串 str1 中第一个不在字符串 str2 中出现的字符下标。
+    m_version = strpbrk( m_url, " \t" );
+    if (!m_version) {
+        return BAD_REQUEST;
+    }
+    *m_version++ = '\0';
+    if (strcasecmp( m_version, "HTTP/1.1") != 0 ) {
+        return BAD_REQUEST;
+    }
+    /**
+     * http://172.27.130.132:9999/index.html
+    */
+    if (strncasecmp(m_url, "http://", 7) == 0 ) {   
+        m_url += 7;
+        // 在参数 str 所指向的字符串中搜索第一次出现字符 c（一个无符号字符）的位置。
+        m_url = strchr( m_url, '/' );
+    }
+    if ( !m_url || m_url[0] != '/' ) {
+        return BAD_REQUEST;
+    }
+    m_check_state = CHECK_STATE_HEADER; // 检查状态变成检查头
     return NO_REQUEST;
 }
 
