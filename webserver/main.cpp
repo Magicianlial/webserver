@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
-#include "lock.h"
+#include "locker.h"
 #include "threadpoll.h"
 #include <signal.h>
 #include "http_conn.h"
