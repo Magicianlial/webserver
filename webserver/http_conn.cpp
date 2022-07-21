@@ -100,7 +100,7 @@ bool http_conn::write() {
 void http_conn::process() {
     
     // 解析HTTP请求
-
+    
     printf("parse request, create response\n");
 
     //生成响应
