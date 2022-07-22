@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 #include <list>
-#include "lock.h"
+#include "locker.h"
 #include <exception>
 #include <cstdio>
 // 线程池类，定义成模板类（代码复用）
